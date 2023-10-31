@@ -6,7 +6,7 @@
 #include <windows.h>
 
 typedef uint8_t *KO_MEM_ADR;
-typedef uint32_t KO_MEM_SIZE; //KO is 32-bit
+typedef uint32_t KO_MEM_SIZE; // KO is 32-bit
 
 /*
  * @struct Skills
@@ -23,12 +23,46 @@ typedef uint32_t KO_MEM_SIZE; //KO is 32-bit
  * Each skill has its own struct and relevant data.
  */
 
-struct KO_MEMORY_MAP 
-{
-    const char *base_module_name_for_all_skills{"ARTY.Guard"}; // This module name persist through all skills presumably
-                                                               // some others too. Subject to change if it is also
-                                                               // related to pointers other than skills.
+struct KO_MEMORY_MAP {
+  const char *base_module_name_for_all_skills{"ARTY.Guard"};
 
-    const std::vector<KO_MEM_SIZE> spike_offsets{0xD0, 0x04, 0x08, 0x00, 0x00, 0x14, 0xA0};
-    const KO_MEM_SIZE spike_secondary_base_address{0x002B0D04};
+  const std::vector<KO_MEM_SIZE> spike_offsets{0xD0, 0x04, 0x08, 0x00,
+                                               0x00, 0x14, 0xA0};
+  const KO_MEM_SIZE spike_secondary_base_address{0x002B0D04};
+
+  const std::vector<KO_MEM_SIZE> thrust_offsets{0x04,  0x08, 0x08, 0x28,
+                                                0x354, 0x60, 0xA0};
+  const KO_MEM_SIZE thrust_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> pierce_offsets{0x04,  0x08, 0x08, 0x28,
+                                                0x348, 0x60, 0xA0};
+  const KO_MEM_SIZE pierce_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> cut_offsets{0x04,  0x08, 0x08, 0x28,
+                                             0x358, 0x60, 0xA0};
+  const KO_MEM_SIZE cut_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> shock_offsets{0x04,  0x08, 0x08, 0x28,
+                                               0x34C, 0x60, 0xA0};
+  const KO_MEM_SIZE shock_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> jab_offsets{0x04,  0x08, 0x08, 0x28,
+                                             0x348, 0x60, 0xA0};
+  const KO_MEM_SIZE jab_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> stab_offsets{0x04,  0x08, 0x08, 0x28,
+                                              0x18C, 0x60, 0xA0};
+  const KO_MEM_SIZE stab_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> stab2_offsets{0x04,  0x08, 0x08, 0x28,
+                                               0x190, 0x60, 0xA0};
+  const KO_MEM_SIZE stab2_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> stroke_offsets{0x04,  0x08, 0x08, 0x28,
+                                                0x358, 0x60, 0xA0};
+  const KO_MEM_SIZE stroke_secondary_base_address{0x002EC4E0};
+
+  const std::vector<KO_MEM_SIZE> lightfeet_offsets{0x04,  0x08, 0x08, 0x28,
+                                                   0x430, 0x60, 0xA0};
+  const KO_MEM_SIZE lightfeet_secondary_base_address{0x002EC4E0};
 };
