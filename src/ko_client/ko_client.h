@@ -21,8 +21,11 @@ class KO_CLIENT {
   // Data Section
 public:
 private:
+  // Game Process
   HANDLE process_handle;
   DWORD process_id;
+
+  // Skill Pointers
   KO_MEM_ADR spike_pointer;
   KO_MEM_ADR thrust_pointer;
   KO_MEM_ADR pierce_pointer;
@@ -133,6 +136,7 @@ private:
       uint32_t second_base_offset, const std::vector<KO_MEM_SIZE> &offsets);
 };
 
+#ifdef KO_CLIENT_IMPLEMENTATION
 KO_CLIENT::KO_CLIENT() {
   KO_MEMORY_MAP ko_memory_map;
   process_id = get_process_id_by_client_name("KnightOnLine.exe");
@@ -145,42 +149,42 @@ KO_CLIENT::KO_CLIENT() {
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.spike_secondary_base_address, ko_memory_map.spike_offsets);
 
-  KO_MEM_ADR thrust_pointer = get_static_memory_address(
+  thrust_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.thrust_secondary_base_address,
       ko_memory_map.thrust_offsets);
 
-  KO_MEM_ADR pierce_pointer = get_static_memory_address(
+  pierce_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.pierce_secondary_base_address,
       ko_memory_map.pierce_offsets);
 
-  KO_MEM_ADR cut_pointer = get_static_memory_address(
+  cut_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.cut_secondary_base_address, ko_memory_map.cut_offsets);
 
-  KO_MEM_ADR shock_pointer = get_static_memory_address(
+  shock_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.shock_secondary_base_address, ko_memory_map.shock_offsets);
 
-  KO_MEM_ADR jab_pointer = get_static_memory_address(
+  jab_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.jab_secondary_base_address, ko_memory_map.jab_offsets);
 
-  KO_MEM_ADR stab2_pointer = get_static_memory_address(
+  stab2_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.stab2_secondary_base_address, ko_memory_map.stab2_offsets);
 
-  KO_MEM_ADR stab_pointer = get_static_memory_address(
+  stab_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.stab_secondary_base_address, ko_memory_map.stab_offsets);
 
-  KO_MEM_ADR stroke_pointer = get_static_memory_address(
+  stroke_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.stroke_secondary_base_address,
       ko_memory_map.stroke_offsets);
 
-  KO_MEM_ADR lightfeet_pointer = get_static_memory_address(
+  lightfeet_pointer = get_static_memory_address(
       process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
       ko_memory_map.lightfeet_secondary_base_address,
       ko_memory_map.lightfeet_offsets);
@@ -273,9 +277,10 @@ const KO_MEM_ADR KO_CLIENT::get_static_memory_address(
   return process_handle;
 }
 
+// TODO: Add safety features to all skill getters.
 [[nodiscard]] inline float KO_CLIENT::get_spike_cooldown() const noexcept {
   float cooldown;
-  // TODO: Add Safety Features
+
   ReadProcessMemory(process_handle, spike_pointer, &cooldown, sizeof(cooldown),
                     0);
   return cooldown;

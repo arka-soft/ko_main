@@ -47,7 +47,7 @@ struct KO_MEMORY_MAP {
   const KO_MEM_SIZE shock_secondary_base_address{0x002EC4E0};
 
   const std::vector<KO_MEM_SIZE> jab_offsets{0x04,  0x08, 0x08, 0x28,
-                                             0x348, 0x60, 0xA0};
+                                             0x340, 0x60, 0xA0};
   const KO_MEM_SIZE jab_secondary_base_address{0x002EC4E0};
 
   const std::vector<KO_MEM_SIZE> stab_offsets{0x04,  0x08, 0x08, 0x28,
@@ -59,7 +59,7 @@ struct KO_MEMORY_MAP {
   const KO_MEM_SIZE stab2_secondary_base_address{0x002EC4E0};
 
   const std::vector<KO_MEM_SIZE> stroke_offsets{0x04,  0x08, 0x08, 0x28,
-                                                0x358, 0x60, 0xA0};
+                                                0x180, 0x60, 0xA0};
   const KO_MEM_SIZE stroke_secondary_base_address{0x002EC4E0};
 
   const std::vector<KO_MEM_SIZE> lightfeet_offsets{0x04,  0x08, 0x08, 0x28,
