@@ -6,21 +6,18 @@
 
 KO_CLIENT g_ko_client;
 
-void Spike()
-{
-    while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        std::cout << g_ko_client.get_spike_cooldown() << std::endl;
-    }
+void Spike() {
+  while (true) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::cout << g_ko_client.get_spike_cooldown() << std::endl;
+  }
 }
 
-int main()
-{
+int main() {
 
-    g_ko_client.print_info();
-    std::thread t1(Spike);
-    t1.join();
+  g_ko_client.print_info();
+  std::thread t1(Spike);
+  t1.join();
 
-    return 0;
+  return 0;
 }
