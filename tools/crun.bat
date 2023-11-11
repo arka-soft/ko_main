@@ -1,7 +1,11 @@
 @echo off
-cd ../build
-out.exe 
+cls
+set PROJECT_DIR=%~dp0..
+set BUILD_DIR=%PROJECT_DIR%\build
 
+pushd %BUILD_DIR%
+%BUILD_DIR%/launcher.exe
+popd
 
 
 
