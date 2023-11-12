@@ -163,28 +163,6 @@ struct KO_BYTE_PATTERNS{
 };
 
 /**
- * @struct KO_BYTE_PATTERNS
- * @brief This struct contains byte patterns, ignore masks and offsets for
- * various skills.
- *
- * @note x_byte_patterns contains the patterns for a specific element in the
- * game. x_ignore_masks contains the masks that within the byte pattern but
- * needs to be ignored because they might change. x_offset_from_pattern is the
- * actual value we are looking for.
- *
- * @example We look for a specific skill cooldown, we can get the name of the
- * skill from the game process as a byte pattern. Inside that byte pattern some
- * bytes are subject to change, for that, we can use the ignore masks to
- * identify those changing bytes. Then, we can add an offset to the byte
- * patterns' address to get the actual cooldown.
- */
- 
-struct KO_BYTE_PATTERNS{
-  KO_MEM_BYTE spike_byte_patterns;
-  KO_MEM_BYTE spike_ingore_masks;
-  KO_MEM_BYTE spike_offset_from_pattern;
-
-/**
  * @brief KO_BYTE_PATTERNS contains byte patterns for various elements such as skills from Knight Online Client.
  */
 struct KO_BYTE_PATTERNS{
@@ -227,6 +205,7 @@ struct KO_BYTE_PATTERNS{
   *  Acknowledge that while this process may seem intricate, it serves to streamline future efforts, especially in the event of game patches.
   */
 
+
   // Character Patterns
   // -------------------------------
   // This byte pattern signifies the player's nation.
@@ -245,7 +224,7 @@ struct KO_BYTE_PATTERNS{
   KO_MEM_BYTE current_hp_byte_patten_karus[KO_STRING_LENGTH_IN_BYTES] = {0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x37, 0xED, 0xA8, 0x82, 0xDC, 0x56, 0xE6, 0x30, 0x78, 0x06, 0xA8, 0x8C, 0x2C, 0x2B, 0xF4, 0xD4, 0x9F, 0x5D, 0x8E, 0x8D, 0x73, 0x86, 0xFA, 0xFE, 0x5C, 0x08, 0x1D, 0x61, 0xB4, 0x0D, 0x4B, 0x56, 0x6B, 0xE9};
 
   KO_MEM_BYTE current_mana_byte_pattern[KO_STRING_LENGTH_IN_BYTES] = {0x00, 0x00, 0xA0, 0x40, 0x00, 0x2D, 0xEC, 0xF2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0xD5, 0xCF, 0xAD, 0xD2, 0x06, 0xB9, 0xF5, 0x19, 0x93, 0x7B, 0x48, 0x1B, 0x43, 0x01, 0xE0, 0xEC, 0x32, 0x41, 0x96, 0x41, 0xFC, 0xEB, 0x9C, 0x5B, 0xAD, 0x56};
-  uint16_t current_mana_offset_from_pattern                        = 0x548; // This should be interpreted as 4 bytes (uint32_t). 548 is big for uint8_t...
+  uint16_t current_mana_offset_from_pattern = 0x548; // This should be interpreted as 4 bytes (uint32_t). 548 is big for uint8_t...
 
 };
 
