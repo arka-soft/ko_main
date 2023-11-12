@@ -90,14 +90,13 @@ struct KO_BYTE_PATTERNS{
 
  // Mana and HP is incoming. (Currently, there is nothing that I can anchor. Still investigating.)
  // Raw: 3C 00 00 00 05 00 00 00 5A 00 00 00 2C 00 00 00 ED 00 00 00 77 00 00 00 32 00 00 00 00 00 00 00 32
- // Still wrong.
+ // Needs more testing but seems stable enough. 
  KO_MEM_BYTE mana_hp_anchor_byte_pattern[33] = {0x3C, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x5A, 0x00, 0x00, 0x00, 0x2C, 0x00, 0x00, 0x00, 0xED, 0x00, 0x00, 0x00, 0x77, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x32};
  int8_t max_mana_offset_from_pattern = -38;
  int8_t current_mana_offset_from_pattern = -34;
-
- int16_t current_hp_offset_from_pattern = -0x50C;
+ 
  int16_t max_hp_offset_from_pattern = -510;
-
+ int16_t current_hp_offset_from_pattern = -0x50C;
 };
 
 /**
