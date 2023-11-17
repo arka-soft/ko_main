@@ -115,11 +115,17 @@ struct KO_BYTE_PATTERNS{
   int16_t max_hp_offset_from_pattern = -510;
   int16_t current_hp_offset_from_pattern = -0x50C;
 
+  //Percentage Healths, from same pattern.
+  KO_MEM_BYTE percentage_hp_mana_byte_pattern[13] = {0x70, 0x72, 0x6F, 0x5F, 0x68, 0x6F, 0x72, 0x4D, 0x70, 0x00, 0x00, 0x00, 0x00};
+  KO_MEM_BYTE percentage_mp_offset_from_pattern = 0xD8; // should be interpreted as float
+  KO_MEM_BYTE percentage_hp_offset_from_pattern = 220;  // should be interpreted as float
+
   // Whisper and Chat State Pattern
   // Raw: 00 00 00 00 00 00 00 00 A6 1A 5A F1 FC 7F 00 00 7F 00 32 40 00 00 00 00
   // This should always be 173 (uint8_t) otherwise either enter is pressed or whisper panel is open and ready to write.
   // Appereantly this is not on the heap so the memory location is always the same. 
   // Needs to be checked, if it does not return any value press enter in the game, I guess?
+  // This does not work at the moment for some reason. So, when needed this will be adjusted. 
   static const KO_MEM_BYTE no_communication_is_open = 173;
   KO_MEM_BYTE whisper_chat_byte_pattern[24] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA6, 0x1A, 0x5A, 0xF1, 0xFC, 0x7F, 0x00, 0x00, 0x7F, 0x00, 0x32, 0x40, 0x00, 0x00, 0x00, 0x00};
   KO_MEM_BYTE whisper_chat_offset_from_pattern = 28;
