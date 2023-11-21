@@ -1,11 +1,20 @@
-#pragma once
+#ifndef KO_CLIENT_H
+#define KO_CLIENT_H
 #include "config/ardream_world_memory_config.h"
-#include <Windows.h>
 #include <iostream>
 #include <iterator>
 #include <stdint.h>
 #include <tchar.h>
 #include <tlhelp32.h>
+#include <cassert>
+#include "kc_memutils.h"
+
+enum class PLAYER_RACE : uint8_t 
+{
+    KARUS = 62, // KARUS identification byte.
+    EL_MORAD = 38 // EL MORAD identification byte.
+};
+
 
 /**
  * @class KnightOnline
@@ -24,7 +33,17 @@ class KO_CLIENT
   private:
     HANDLE process_handle;
     DWORD process_id;
-    KO_MEM_ADR spike_pointer;
+
+    PLAYER_RACE player_race;
+
+    KO_MEM_ADR spike_cooldown_ptr;
+    KO_MEM_ADR thrust_cooldown_ptr;
+    KO_MEM_ADR pierce_cooldown_ptr;
+
+    KO_MEM_ADR player_max_hp_ptr;
+    KO_MEM_ADR player_cur_hp_ptr;
+    KO_MEM_ADR player_max_mp_ptr;
+    KO_MEM_ADR player_cur_mp_ptr;
 
     // Method Section
   public:
@@ -43,9 +62,33 @@ class KO_CLIENT
 
     ~KO_CLIENT();
 
-    [[nodiscard]] DWORD get_process_id() const noexcept;
-    [[nodiscard]] HANDLE get_process_handle() const noexcept;
-    [[nodiscard]] inline float get_spike_cooldown() const noexcept;
+    [[nodiscard]] DWORD get_process_id() const noexcept{return process_id;}
+    [[nodiscard]] HANDLE get_process_handle() const noexcept{return process_handle;}
+    [[nodiscard]] PLAYER_RACE get_player_race() const noexcept{return player_race;}
+
+
+    /**
+     * @brief A utility macro to define getter functions that read addresses from the KO memory and returns them as float.
+     */
+    #define DEFINE_FLOAT_GETTER_FUNC(function_name, variable_name) [[nodiscard]] inline float function_name() const noexcept \
+    {float f; ReadProcessMemory(process_handle, variable_name, &f, sizeof(f), NULL); return f;}
+
+    /**
+     * @brief A utility macro to define getter functions that read addresses from the KO memory and returns them as uint32.
+     */
+    #define DEFINE_UINT32_GETTER_FUNC(function_name, variable_name) [[nodiscard]] inline uint32_t function_name() const noexcept \
+    {uint32_t i; ReadProcessMemory(process_handle, variable_name, &i, sizeof(i), NULL); return i;}
+
+    // Getter functions 
+    DEFINE_FLOAT_GETTER_FUNC(get_spike_cooldown, spike_cooldown_ptr); 
+    DEFINE_FLOAT_GETTER_FUNC(get_pierce_cooldown, pierce_cooldown_ptr); 
+    DEFINE_FLOAT_GETTER_FUNC(get_thrust_cooldown, thrust_cooldown_ptr); 
+
+    DEFINE_UINT32_GETTER_FUNC(get_player_max_hp, player_max_hp_ptr);
+    DEFINE_UINT32_GETTER_FUNC(get_player_cur_hp, player_cur_hp_ptr);
+    DEFINE_UINT32_GETTER_FUNC(get_player_max_mp, player_max_mp_ptr);
+    DEFINE_UINT32_GETTER_FUNC(get_player_cur_mp, player_cur_mp_ptr);
+
     inline void print_info() const noexcept;
 
   private:
@@ -61,72 +104,73 @@ class KO_CLIENT
     DWORD get_process_id_by_client_name(const char *process_name);
 
     /**
-     * @brief Get the base address of a module in a specified process.
-     *
-     * This function retrieves the base address of a module with the given name
-     * in a target process by creating a snapshot of the current threads and iterating
-     * through them to find the desired process
-     *
-     * @param process_id
-     * @param module_name
-     * @return KO_MEM_ADR
+     * @brief Finds the player race from the KO memory and returns it.
+     * 
+     * @param ko_memory_ref Reference to the mapped KO memory object
+     * @param conf Reference to the KO memory config
+     * @return PLAYER_RACE
      */
-    static KO_MEM_ADR get_game_module_base_address(const DWORD process_id, const char *module_name);
+    PLAYER_RACE find_player_race(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf);
+
 
     /**
-     * @brief Resolve a pointer chain to retrieve the final memory address in a
-     * remote process.
-     *
-     * This function calculates the memory address by following a chain of
-     * offsets from a base address within a remote process, allowing for data
-     * retrieval.
-     *
-     * @note Here's how it works:
-     * In gaming, we often encounter the challenge of locating dynamic values
-     * within the game's memory, which change every time we open or close the
-     * game. To overcome this, we rely on static memory locations, also known as
-     * pointers, to access the desired values. This process involves utilizing a
-     * game module, a secondary address, and a series of offsets, which together
-     * guide us to the target value.
-     *
-     * Start with the base address, "GameModule," and add the secondary address
-     * to it: "GameModule" + SecondaryAddress. From this point, we have a
-     * pointer points to another pointer: ("GameModule" + SecondaryAddress)  ->
-     * PTR1. PTR1, to which we apply the second offset: PTR1 + Second Offset ->
-     * PTR 2. The process continues with subsequent offsets until the last
-     * pointer ultimately directs us to the desired value. It's important to
-     * note that all of this information is typically obtained using tools like
-     * Cheat Engine, which help us navigate and manipulate the game's memory
-     * effectively. This method allows us to find and interact with the in-game
-     * data we're interested in.
-     *
-     *
-     * @param process_handle
-     * @param process_id
-     * @param base_module_name
-     * @param second_base_offset
-     * @param offsets
-     * @return KO_MEM_ADR
+     * @brief A generic function that finds the skill cooldown by searching a skill byte pattern.
+     * 
+     * @param ko_memory_ref Reference to the mapped KO memory object
+     * @param conf Reference to the KO memory config
+     * @param skill_byte_pattern Pointer to the beginning of the byte pattern to search
+     * @param byte_pattern_size Size of the pattern to search for
+     * @return KO_MEM_ADR A pointer to the first match to the pattern, expressed in the address space of KnighOnline.
      */
+    KO_MEM_ADR find_skill_cooldown_ptr_generic(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf, KO_MEM_BYTE* skill_byte_pattern, size_t byte_pattern_size);
 
-    KO_MEM_ADR static const get_static_memory_address(HANDLE process_handle, DWORD process_id,
-                                                      const char *base_module_name, uint32_t second_base_offset,
-                                                      const std::vector<KO_MEM_SIZE> &offsets);
+    /**
+     * @brief A utility macro to call find_skill_cooldown_ptr_generic for a skill name.
+     */
+    #define find_skill_cooldown_ptr(ko_memory_ref, conf, skill_name) find_skill_cooldown_ptr_generic(ko_memory_ref, conf, conf.skill_name##_byte_pattern, sizeof(conf.skill_name##_byte_pattern));
+
+    /**
+     * @brief  Finds the patterns for the player health and mana information in the KO memory, and assings them to member variables.
+     * 
+     * @param ko_memory_ref 
+     * @param conf 
+     */
+    void assign_player_health_and_mana_ptr(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf);
 };
 
+#endif
+
 #ifdef KO_CLIENT_IMPLEMENTATION
+#pragma once
+
+#define KC_MEMUTILS_IMPLEMENTATION 1
+#include "kc_memutils.h"
 
 KO_CLIENT::KO_CLIENT()
 {
-    KO_MEMORY_MAP ko_memory_map;
     process_id = get_process_id_by_client_name("KnightOnLine.exe");
 
     // TODO: Add Safety Features
     process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id);
 
-    // Skill pointers
-    spike_pointer = get_static_memory_address(process_handle, process_id, ko_memory_map.base_module_name_for_all_skills,
-                                              ko_memory_map.spike_secondary_base_address, ko_memory_map.spike_offsets);
+    // Map the process memory to search for patterns in it
+    double const ko_address_space_heap_starts_at = 0.2; // GB (via manual inspection using vmmap)
+    double const ko_address_space_heap_size = 1; // GB (via manual inspection using vmmap)
+    KO_MEM_ADR heap_base_address = (KO_MEM_ADR) GB_TO_BYTES(ko_address_space_heap_starts_at);
+    uint64_t bytes_to_map = GB_TO_BYTES(ko_address_space_heap_size);
+
+    PROCESS_MEMORY ko_memory{process_handle, heap_base_address, bytes_to_map};
+    KO_MEMORY_CONFIG ko_memory_config;
+
+    // Assign the pointers and stuff
+    player_race = find_player_race(ko_memory, ko_memory_config);
+
+    spike_cooldown_ptr = find_skill_cooldown_ptr(ko_memory, ko_memory_config, spike);
+    thrust_cooldown_ptr = find_skill_cooldown_ptr(ko_memory, ko_memory_config, thrust);
+    pierce_cooldown_ptr = find_skill_cooldown_ptr(ko_memory, ko_memory_config, pierce);
+
+    assign_player_health_and_mana_ptr(ko_memory, ko_memory_config);
+
 }
 
 KO_CLIENT::~KO_CLIENT()
@@ -160,82 +204,58 @@ DWORD KO_CLIENT::get_process_id_by_client_name(const char *process_name)
     return result;
 }
 
-KO_MEM_ADR KO_CLIENT::get_game_module_base_address(const DWORD process_id, const char *module_name)
+PLAYER_RACE KO_CLIENT::find_player_race(PROCESS_MEMORY &ko_memory_ref, KO_MEMORY_CONFIG &conf)
 {
-    // Takes a snapshot of the specified processes, as well as the modules
-    // only used by these processes.
-    // TODO: Add Safety Features
-    HANDLE snapshot_handle = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, process_id);
+    KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.player_nation_identification_byte_pattern,
+                                                             conf.KO_STRING_LENGTH_IN_BYTES);
 
-    if (snapshot_handle == INVALID_HANDLE_VALUE)
+    result += conf.player_nation_identification_offset_from_pattern;
+
+    KO_MEM_BYTE nation_byte;
+    ReadProcessMemory(process_handle, result, &nation_byte, sizeof(nation_byte), NULL);
+
+    switch (nation_byte)
     {
-        std::cerr << "Retrieving snapshot failed in "
-                     "'get_game_module_base_address()'\n ";
-        return 0;
+    case conf.player_nation_human:
+        return PLAYER_RACE::EL_MORAD;
+    case conf.player_nation_karus:
+        return PLAYER_RACE::KARUS;
+    default:
+        assert(1); // TODO: do something about this.
+        return PLAYER_RACE::KARUS;
     }
 
-    MODULEENTRY32 module_entry{};
-    module_entry.dwSize = sizeof(MODULEENTRY32);
-
-    KO_MEM_ADR result = nullptr;
-    while (Module32Next(snapshot_handle, &module_entry))
-    {
-        if (_tcsicmp(module_entry.szModule, module_name) == 0)
-        {
-            result = module_entry.modBaseAddr;
-            break;
-        }
-    }
-    CloseHandle(snapshot_handle);
-    return result;
 }
 
-const KO_MEM_ADR KO_CLIENT::get_static_memory_address(HANDLE process_handle, DWORD process_id,
-                                                      const char *base_module_name, uint32_t second_base_offset,
-                                                      const std::vector<KO_MEM_SIZE> &offsets)
+KO_MEM_ADR KO_CLIENT::find_skill_cooldown_ptr_generic(PROCESS_MEMORY &ko_memory_ref, KO_MEMORY_CONFIG &conf, KO_MEM_BYTE *skill_byte_pattern, size_t byte_pattern_size)
 {
-    // TODO: Add Safety Features
-    KO_MEM_ADR game_module_base_address = get_game_module_base_address(process_id, base_module_name);
-    KO_MEM_ADR game_module_address = game_module_base_address + second_base_offset;
+    KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(skill_byte_pattern, byte_pattern_size);
 
-    const size_t bytes_to_read_in_ko_memory = sizeof(KO_MEM_SIZE);
+    KO_MEM_ADR nation_byte_adr = result + conf.skill_nation_identification_offset_from_pattern;
+    KO_MEM_BYTE nation_byte;
+    ReadProcessMemory(process_handle, nation_byte_adr, &nation_byte, sizeof(nation_byte), NULL);
 
-    KO_MEM_ADR next_memory_address = game_module_address;
-    for (int i = 0; i < offsets.size(); i++)
-    {
-        if (ReadProcessMemory(process_handle, next_memory_address, &next_memory_address, bytes_to_read_in_ko_memory,
-                              NULL) == 0)
-        {
-            std::cerr << "Resolving a pointer has failed in 'get_static_memory_address()'\n";
-            return 0;
-        }
+    // If not the first match, then it's the second match.
+    if (nation_byte != (KO_MEM_BYTE)player_race)
+        result = ko_memory_ref.find_pattern_in_memory(skill_byte_pattern, byte_pattern_size, result + 1);
 
-        next_memory_address += offsets[i];
-    }
-
-    return next_memory_address;
+    return result + conf.skill_cooldown_offset_from_pattern;
 }
 
-[[nodiscard]] DWORD KO_CLIENT::get_process_id() const noexcept
+void KO_CLIENT::assign_player_health_and_mana_ptr(PROCESS_MEMORY &ko_memory_ref, KO_MEMORY_CONFIG &conf)
 {
-    return process_id;
-}
+    KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.mana_hp_anchor_byte_pattern, sizeof(conf.mana_hp_anchor_byte_pattern));
 
-[[nodiscard]] HANDLE KO_CLIENT::get_process_handle() const noexcept
-{
-    return process_handle;
-}
+    player_max_hp_ptr = result + conf.max_hp_offset_from_pattern;
+    player_cur_hp_ptr = result + conf.current_hp_offset_from_pattern;
 
-[[nodiscard]] inline float KO_CLIENT::get_spike_cooldown() const noexcept
-{
-    float cooldown;
-    // TODO: Add Safety Features
-    ReadProcessMemory(process_handle, spike_pointer, &cooldown, sizeof(cooldown), 0);
-    return cooldown;
+    player_max_mp_ptr = result + conf.max_mana_offset_from_pattern;
+    player_cur_mp_ptr = result + conf.current_mana_offset_from_pattern;
 }
 
 inline void KO_CLIENT::print_info() const noexcept
 {
     std::cout << "Knight Online PID: " << process_id << "\nKnight Online Handle:  " << process_handle << std::endl;
 }
+
 #endif

@@ -5,15 +5,25 @@
 #include <vector>
 #include <windows.h>
 
-typedef uint8_t *KO_MEM_ADR;
-typedef uint32_t KO_MEM_SIZE;
-typedef uint8_t KO_MEM_BYTE;
+// A pointer to an address in the address space of Knight Online.
+// It is defined as uint8_t so that + operator increments it in bytes.
+// But it is never meant to be dereferenced in the host process !
+// It can only be dereferenced using ReadProcessMemory function.
+typedef uint8_t* KO_MEM_ADR;
 
+// A byte value in the address space of Knight Online.
+typedef uint8_t  KO_MEM_BYTE;
+
+// An offset of bytes in the address space of Knight Online.
+// KnightOnline.exe is a 32-bit process, so its address space goes from 0 to maximum of uint32_t.
+// But an offset in byte can be directional (going backward / forward in memory).
+// Hence, we need an int64_t for this.
+typedef int64_t  KO_MEM_OFFSET; 
 
 /**
  * @brief KO_BYTE_PATTERNS contains byte patterns for various elements such as skills from Knight Online Client.
  */
-struct KO_BYTE_PATTERNS{
+struct KO_MEMORY_CONFIG{
   // Constants
   // -------------------------------
   const static uint8_t KO_STRING_LENGTH_IN_BYTES = 40;
@@ -29,8 +39,8 @@ struct KO_BYTE_PATTERNS{
   const static KO_MEM_BYTE skill_nation_karus = 38;
 
   // It seems that Karus is always the first address that is found when searching. 
-  KO_MEM_BYTE skill_nation_identification_offset_from_pattern = 0x78; // When added to the address, it points to the nation of the skill. 
-  KO_MEM_BYTE skill_cooldown_offset_from_pattern              = 0x9C; // When added to the address, it point to the cooldown of the skill. 
+  KO_MEM_OFFSET skill_nation_identification_offset_from_pattern = 0x78; // When added to the address, it points to the nation of the skill. 
+  KO_MEM_OFFSET skill_cooldown_offset_from_pattern              = 0x9C; // When added to the address, it point to the cooldown of the skill. 
 
   // Tested
   // Raw: 53 70 69 6B 65 00 69 63 20 74 6F 75 63 68 00 00 05 00 00 00 0F 00 00 00 53 70 69 6B 65 00 69 63 20 74 6F 75 63 68 00 72
@@ -42,7 +52,7 @@ struct KO_BYTE_PATTERNS{
   
   // Tested 
   // Raw: 50 69 65 72 63 65 00 72 61 69 6E 00 3F 3F 3F 00 06 00 00 00 0F 00 00 00 50 69 65 72 63 65 00 72 61 69 6E 00 6E 74 65 72
-  KO_MEM_BYTE priece_byte_pattern[KO_STRING_LENGTH_IN_BYTES] = {0x50, 0x69, 0x65, 0x72, 0x63, 0x65, 0x00, 0x72, 0x61, 0x69, 0x6E, 0x00, 0x3F, 0x3F, 0x3F, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x50, 0x69, 0x65, 0x72, 0x63, 0x65, 0x00, 0x72, 0x61, 0x69, 0x6E, 0x00, 0x6E, 0x74, 0x65, 0x72};
+  KO_MEM_BYTE pierce_byte_pattern[KO_STRING_LENGTH_IN_BYTES] = {0x50, 0x69, 0x65, 0x72, 0x63, 0x65, 0x00, 0x72, 0x61, 0x69, 0x6E, 0x00, 0x3F, 0x3F, 0x3F, 0x00, 0x06, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x50, 0x69, 0x65, 0x72, 0x63, 0x65, 0x00, 0x72, 0x61, 0x69, 0x6E, 0x00, 0x6E, 0x74, 0x65, 0x72};
  
   // Tested
   // Raw: 43 75 74 00 73 74 00 6E 00 69 6E 00 3F 3F 3F 00 03 00 00 00 0F 00 00 00 43 75 74 00 73 74 20 00 00 69 6E 00 6E 74 65 72
@@ -104,21 +114,21 @@ struct KO_BYTE_PATTERNS{
   // Tested 
   // Raw: 54 65 78 74 5F 4E 61 74 69 6F 6E 00 00 00 00 00 0B 00 00 00 0F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
   KO_MEM_BYTE player_nation_identification_byte_pattern[KO_STRING_LENGTH_IN_BYTES] = {0x54, 0x65, 0x78, 0x74, 0x5F, 0x4E, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  KO_MEM_BYTE player_nation_identification_offset_from_pattern                     = 0xC4; 
+  KO_MEM_OFFSET player_nation_identification_offset_from_pattern                     = 0xC4; 
 
  // Mana and HP is incoming. (Currently, there is nothing that I can anchor. Still investigating.)
  // Raw: 3C 00 00 00 05 00 00 00 5A 00 00 00 2C 00 00 00 ED 00 00 00 77 00 00 00 32 00 00 00 00 00 00 00 32
  // Needs more testing but seems stable enough. 
   KO_MEM_BYTE mana_hp_anchor_byte_pattern[33] = {0x3C, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x5A, 0x00, 0x00, 0x00, 0x2C, 0x00, 0x00, 0x00, 0xED, 0x00, 0x00, 0x00, 0x77, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x32};
-  int8_t max_mana_offset_from_pattern = -38;
-  int8_t current_mana_offset_from_pattern = -34;
-  int16_t max_hp_offset_from_pattern = -510;
-  int16_t current_hp_offset_from_pattern = -0x50C;
+  KO_MEM_OFFSET max_mana_offset_from_pattern = -0x38;
+  KO_MEM_OFFSET current_mana_offset_from_pattern = -0x34;
+  KO_MEM_OFFSET max_hp_offset_from_pattern = -0x510;
+  KO_MEM_OFFSET current_hp_offset_from_pattern = -0x50C;
 
   //Percentage Healths, from same pattern.
   KO_MEM_BYTE percentage_hp_mana_byte_pattern[13] = {0x70, 0x72, 0x6F, 0x5F, 0x68, 0x6F, 0x72, 0x4D, 0x70, 0x00, 0x00, 0x00, 0x00};
-  KO_MEM_BYTE percentage_mp_offset_from_pattern = 0xD8; // should be interpreted as float
-  KO_MEM_BYTE percentage_hp_offset_from_pattern = 220;  // should be interpreted as float
+  KO_MEM_OFFSET percentage_mp_offset_from_pattern = 0xD8; // should be interpreted as float
+  KO_MEM_OFFSET percentage_hp_offset_from_pattern = 0x220;  // should be interpreted as float
 
   // Whisper and Chat State Pattern
   // Raw: 00 00 00 00 00 00 00 00 A6 1A 5A F1 FC 7F 00 00 7F 00 32 40 00 00 00 00
@@ -128,6 +138,7 @@ struct KO_BYTE_PATTERNS{
   // This does not work at the moment for some reason. So, when needed this will be adjusted. 
   static const KO_MEM_BYTE no_communication_is_open = 173;
   KO_MEM_BYTE whisper_chat_byte_pattern[24] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA6, 0x1A, 0x5A, 0xF1, 0xFC, 0x7F, 0x00, 0x00, 0x7F, 0x00, 0x32, 0x40, 0x00, 0x00, 0x00, 0x00};
-  KO_MEM_BYTE whisper_chat_offset_from_pattern = 28;
+  int32_t whisper_chat_offset_from_pattern = 0x28;
 
 };
+
