@@ -152,7 +152,7 @@ public:
     PROCESS_MEMORY::PROCESS_MEMORY(HANDLE process_handle, OTHER_PROCESS_PTR base_address, SIZE_T num_bytes)
     {
         this->map_num_bytes = num_bytes;
-        assert(process_handle != nullptr); //TODO: SHA, whoever uses this constructor must open the process themselves.
+        //assert(process_handle != nullptr); //TODO: SHA, whoever uses this constructor must open the process themselves.
 
         // Remark: This is also guaranteed to initialize the whole memory to 0.
         // memset(mapped_memory, 0, bytes_to_map) is implied.
