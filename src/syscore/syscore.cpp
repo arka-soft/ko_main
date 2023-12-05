@@ -1,8 +1,13 @@
+
+
 // SYCORE
 #include "syscore.h"
 
 #define SYSCORE_BENCHMARK_IMPLEMENTATION 1
 #include "sc_benchmark.h"
+
+#define SYSCORE_KEYS_IMPLEMENTATION 1
+#include "sc_keys.h"
 
 // COMPONENTS
 #define KO_CLIENT_IMPLEMENTATION 1
@@ -10,18 +15,21 @@
 
 namespace global
 {
-    KO_CLIENT ko_client;
+     KO_CLIENT ko_client;
 }
+
 #include "../dynamic/dynamic.cpp"
 
-
-
-int main()
+int main( )
 {
-    while (1)
-    {
-        dynamic_loop();
-    }
-
-    return 0;
+     while(1)
+     {
+          global::ko_client.send_spike_until_in_cooldown( );
+          global::ko_client.send_thrust_until_in_cooldown( );
+          global::ko_client.send_pierce_until_in_cooldown( );
+          global::ko_client.send_cut_until_in_cooldown( );
+          global::ko_client.send_shock_until_in_cooldown( );
+          global::ko_client.send_jab_until_in_cooldown( );
+     }
+     return 0;
 }
