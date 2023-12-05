@@ -1,7 +1,6 @@
 #include <iostream>
 #include "../syscore/syscore.h"
 
-
 void dynamic_loop()
 {
    SYSLOG_INFO("INFO" << std::endl);
@@ -11,3 +10,4 @@ void dynamic_loop()
    SYSLOG_SUCCESS("SUCCESS"<< std::endl);
    Sleep(1000);
 }
+

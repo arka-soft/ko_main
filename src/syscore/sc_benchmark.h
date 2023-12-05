@@ -1,6 +1,5 @@
 #ifndef SYSCORE_BENCHMARK_H
 #define SYSCORE_BENCHMARK_H
-#include  "syscore.h"
 #include  "windows.h"
 /**
  * @class TICTOC
