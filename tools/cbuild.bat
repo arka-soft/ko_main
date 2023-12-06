@@ -14,7 +14,7 @@ echo ^|                                                       COMPILATION
 echo ^+----------------------------------------------------------------------------------------------------------------------------+
 
 @REM Define DEBUG variable
-set DEBUG=0
+set DEBUG=1
 
 if %DEBUG% EQU 1 (
     echo ^|  Debug:              ^|  Yes                                           

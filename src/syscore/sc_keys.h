@@ -134,8 +134,18 @@ enum SKILL_HIT_REPORT
 #ifdef SYSCORE_KEYS_IMPLEMENTATION
 bool is_key_pressed(const int& key_code)
 {
-     // Check if the key is pressed by using bitwise AND with the high-order bit
-     return (GetAsyncKeyState(key_code) & 0x8000) != 0;
+     short key_state = GetAsyncKeyState(key_code);
+
+     if(key_state == 0)
+     {
+          // GetAsyncKeyState returns zero if the key is not pressed or an error occurs
+          SYSLOG_ERROR("GetAsyncKeyState failed for key " << key_code << std::endl);
+          // Handle the error as appropriate
+          return false;
+     }
+
+     // Check if the high-order bit is set, indicating the key is pressed
+     return (key_state & 0x8000) != 0;
 }
 
 template<typename... Keys>
@@ -150,6 +160,12 @@ void send_raw_key(const uint16_t& key, const uint8_t& key_press_release_delay_in
 
      //Translating virtual-code to scan code for Knight Online.
      uint16_t scan_code = MapVirtualKey(key, 0);
+
+     if(scan_code == 0)
+     {
+          SYSLOG_ERROR("MapVirtualKey failed for key: " << key << std::endl);
+          // Handle the error as appropriate
+     }
 
      INPUT keyboard;
 
@@ -166,7 +182,7 @@ void send_raw_key(const uint16_t& key, const uint8_t& key_press_release_delay_in
      bool is_send_input_successful = SendInput(1, &keyboard, sizeof(INPUT));
      if(!is_send_input_successful)
      {
-          // SYSLOG_ERROR("Key_down event failed with error code: " << GetLastError() << "\nFailed Key: " << scan_code << "\nFailed Virtual Key: " << key);
+          SYSLOG_ERROR("Key_down event failed with error code: " << GetLastError( ) << "\nFailed Key: " << scan_code << "\nFailed Virtual Key: " << key << std::endl);
           return;
      }
 
@@ -185,7 +201,7 @@ void send_raw_key(const uint16_t& key, const uint8_t& key_press_release_delay_in
      is_send_input_successful = SendInput(1, &keyboard, sizeof(INPUT));
      if(!is_send_input_successful)
      {
-          // SYSLOG_ERROR("Key_up event failed with error code: " << GetLastError() << "\nFailed Scan Code: " << scan_code << "\nFailed Virtual Key: " << key);
+          SYSLOG_ERROR("Key_up event failed with error code: " << GetLastError( ) << "\nFailed Scan Code: " << scan_code << "\nFailed Virtual Key: " << key << std::endl);
           return;
      }
      Sleep(1);

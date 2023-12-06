@@ -1,5 +1,4 @@
 
-
 // SYCORE
 #include "syscore.h"
 
@@ -8,6 +7,7 @@
 
 #define SYSCORE_KEYS_IMPLEMENTATION 1
 #include "sc_keys.h"
+#include "sc_log.h"
 
 // COMPONENTS
 #define KO_CLIENT_IMPLEMENTATION 1
@@ -30,6 +30,8 @@ int main( )
           global::ko_client.send_cut_until_in_cooldown( );
           global::ko_client.send_shock_until_in_cooldown( );
           global::ko_client.send_jab_until_in_cooldown( );
+
+          Sleep(50);
      }
      return 0;
 }
