@@ -87,20 +87,13 @@ class KO_CLIENT
    * @return KO_MEM_ADR A pointer to the first match to the pattern, expressed
    * in the address space of KnighOnline.
    */
-     KO_MEM_ADR find_skill_cooldown_ptr_generic(PROCESS_MEMORY&   ko_memory_ref,
-                                                KO_MEMORY_CONFIG& conf,
-                                                KO_MEM_BYTE*      skill_byte_pattern,
-                                                size_t            byte_pattern_size);
+     KO_MEM_ADR find_skill_cooldown_ptr_generic(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf, KO_MEM_BYTE* skill_byte_pattern, size_t byte_pattern_size);
 
 /**
  * @brief A utility macro to call find_skill_cooldown_ptr_generic for a skill
  * name.
  */
-#define find_skill_cooldown_ptr(ko_memory_ref, conf, skill_name)                                             \
-     find_skill_cooldown_ptr_generic(ko_memory_ref,                                                          \
-                                     conf,                                                                   \
-                                     conf.skill_name##_byte_pattern,                                         \
-                                     sizeof(conf.skill_name##_byte_pattern));
+#define find_skill_cooldown_ptr(ko_memory_ref, conf, skill_name) find_skill_cooldown_ptr_generic(ko_memory_ref, conf, conf.skill_name##_byte_pattern, sizeof(conf.skill_name##_byte_pattern));
 
      /**
    * @brief  Finds the patterns for the player health and mana information in
@@ -143,80 +136,91 @@ class KO_CLIENT
     * successful skill activation, allowing the system to proceed to the next skill
     * confidently.
     */
-#define DEFINE_SEND_SKILL_UNTIL_IN_COOLDOWN_FUNC(skill)                                                               \
-     void send_##skill##_until_in_cooldown( ) const noexcept                                                          \
-     {                                                                                                                \
-          const float epsilon                  = 1e-6; /* Tolerance for floating-point number comparison */           \
-          const int   previous_cooldowns_count = 3;    /* Number of previous cooldowns to consider */                 \
-          const int   input_overwhelm_protection_ms = 50;   /* Protect against input lag */                           \
-          const int   max_duration_ms               = 3000; /* Timeout in ms */                                       \
-                                                                                                                      \
-          float current_cooldown = get_##skill##_cooldown( );                                                         \
-          float previous_cooldown;                                                                                    \
-          int   previous_decreasing_cooldown_count = 0; /* Track previous cooldowns */                                \
-          auto  start_time                         = std::chrono::high_resolution_clock::now( );                      \
-                                                                                                                      \
-          if(current_cooldown > epsilon) { return; } /* If skill is in cooldown, return */                            \
-                                                                                                                      \
-          while(true)                                                                                                 \
-          {                                                                                                           \
-               send_multiple_keys(skill##_page, skill##_key); /* Attempt to activate the skill */                     \
-               previous_cooldown = current_cooldown;                                                                  \
-               current_cooldown  = get_##skill##_cooldown( ); /* Get current cooldown */                              \
-                                                                                                                      \
-               Sleep(input_overwhelm_protection_ms);                                                                  \
-                                                                                                                      \
-               const bool is_previous_cooldown_bigger_than_current_cooldown =                                         \
-                   previous_cooldown - current_cooldown > epsilon;                                                    \
-                                                                                                                      \
-               if(is_previous_cooldown_bigger_than_current_cooldown) /* Skill is active and cooldown is decreasing */ \
-               {                                                                                                      \
-                    previous_decreasing_cooldown_count++; /* Track decreasing cooldown count */                       \
-               }                                                                                                      \
-               else                                                                                                   \
-               {                                                                                                      \
-                    previous_decreasing_cooldown_count = 0; /* If the trail fails, start again */                     \
-                    continue;                                                                                         \
-               }                                                                                                      \
-                                                                                                                      \
-               bool is_cooldown_consistently_decreasing =                                                             \
-                   previous_decreasing_cooldown_count == previous_cooldowns_count;                                    \
-                                                                                                                      \
-               if(is_cooldown_consistently_decreasing) /* X amount of previous cooldowns is decreasing */             \
-               {                                                                                                      \
-                    send_raw_key(VK_R);                                                                               \
-                    return;                                                                                           \
-               }                                                                                                      \
-                                                                                                                      \
-               auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(                             \
-                   std::chrono::high_resolution_clock::now( ) - start_time);                                          \
-                                                                                                                      \
-               if(elapsed_time.count( ) >= max_duration_ms) { break; } /* Timeout */                                  \
-          }                                                                                                           \
+#define DEFINE_SEND_SKILL_UNTIL_IN_COOLDOWN_FUNC(skill)                                                                                                                                                \
+     bool send_##skill##_until_in_cooldown( ) const noexcept                                                                                                                                           \
+     {                                                                                                                                                                                                 \
+          const float epsilon                       = 1e-6; /* Tolerance for floating-point number comparison */                                                                                       \
+          const int   previous_cooldowns_count      = 3;    /* Number of previous cooldowns to consider */                                                                                             \
+          const int   input_overwhelm_protection_ms = 50;   /* Protect against input lag */                                                                                                            \
+          const int   max_duration_ms               = 3000; /* Timeout in ms */                                                                                                                        \
+                                                                                                                                                                                                       \
+          float current_cooldown = get_##skill##_cooldown( );                                                                                                                                          \
+          float previous_cooldown;                                                                                                                                                                     \
+          int   previous_decreasing_cooldown_count = 0; /* Track previous cooldowns */                                                                                                                 \
+          auto  start_time                         = std::chrono::high_resolution_clock::now( );                                                                                                       \
+                                                                                                                                                                                                       \
+          if(current_cooldown > epsilon)                                                                                                                                                               \
+          {                                                                                                                                                                                            \
+               return false;                                                                                                                                                                           \
+          } /* If skill is in cooldown, return */                                                                                                                                                      \
+          while(true)                                                                                                                                                                                  \
+          {                                                                                                                                                                                            \
+               send_multiple_keys(skill##_page, skill##_key); /* Attempt to activate the skill */                                                                                                      \
+               previous_cooldown = current_cooldown;                                                                                                                                                   \
+               current_cooldown  = get_##skill##_cooldown( ); /* Get current cooldown */                                                                                                               \
+                                                                                                                                                                                                       \
+               Sleep(input_overwhelm_protection_ms);                                                                                                                                                   \
+                                                                                                                                                                                                       \
+               const bool is_previous_cooldown_bigger_than_current_cooldown = previous_cooldown - current_cooldown > epsilon;                                                                          \
+                                                                                                                                                                                                       \
+               if(is_previous_cooldown_bigger_than_current_cooldown) /* Skill is active and cooldown is decreasing */                                                                                  \
+               {                                                                                                                                                                                       \
+                    previous_decreasing_cooldown_count++; /* Track decreasing cooldown count */                                                                                                        \
+               }                                                                                                                                                                                       \
+               else                                                                                                                                                                                    \
+               {                                                                                                                                                                                       \
+                    previous_decreasing_cooldown_count = 0; /* If the trail fails, start again */                                                                                                      \
+                    continue;                                                                                                                                                                          \
+               }                                                                                                                                                                                       \
+                                                                                                                                                                                                       \
+               bool is_cooldown_consistently_decreasing = previous_decreasing_cooldown_count == previous_cooldowns_count;                                                                              \
+                                                                                                                                                                                                       \
+               if(is_cooldown_consistently_decreasing) /* X amount of previous cooldowns is decreasing */                                                                                              \
+               {                                                                                                                                                                                       \
+                    send_raw_key(VK_R);                                                                                                                                                                \
+                    return true;                                                                                                                                                                       \
+               }                                                                                                                                                                                       \
+                                                                                                                                                                                                       \
+               auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now( ) - start_time);                                                     \
+                                                                                                                                                                                                       \
+               if(elapsed_time.count( ) >= max_duration_ms)                                                                                                                                            \
+               {                                                                                                                                                                                       \
+                    SYSLOG_WARN("Failed to send " << #skill << ", timed out."); /* Log the timeout status */                                                                                           \
+                    return false;                                                                                                                                                                      \
+               } /* Timeout */                                                                                                                                                                         \
+          }                                                                                                                                                                                            \
      }
 
 /**
  * @brief A utility macro to define getter functions that read addresses from
  * the KO memory and returns them as float.
  */
-#define DEFINE_FLOAT_GETTER_FUNC(function_name, variable_name)                                               \
-     [[nodiscard]] inline float function_name( ) const noexcept                                              \
-     {                                                                                                       \
-          float f;                                                                                           \
-          ReadProcessMemory(process_handle, variable_name, &f, sizeof(f), NULL);                             \
-          return f;                                                                                          \
+#define DEFINE_FLOAT_GETTER_FUNC(function_name, variable_name)                                                                                                                                         \
+     [[nodiscard]] inline float function_name( ) const noexcept                                                                                                                                        \
+     {                                                                                                                                                                                                 \
+          float f;                                                                                                                                                                                     \
+          if(!ReadProcessMemory(process_handle, variable_name, &f, sizeof(f), NULL))                                                                                                                   \
+          {                                                                                                                                                                                            \
+               SYSLOG_ERROR("Failed to read memory for " #variable_name ". Returning 0.0.");                                                                                                           \
+               return 0.0f;                                                                                                                                                                            \
+          }                                                                                                                                                                                            \
+          return f;                                                                                                                                                                                    \
      }
 
 /**
  * @brief A utility macro to define getter functions that read addresses from
  * the KO memory and returns them as uint32.
  */
-#define DEFINE_UINT32_GETTER_FUNC(function_name, variable_name)                                              \
-     [[nodiscard]] inline uint32_t function_name( ) const noexcept                                           \
-     {                                                                                                       \
-          uint32_t i;                                                                                        \
-          ReadProcessMemory(process_handle, variable_name, &i, sizeof(i), NULL);                             \
-          return i;                                                                                          \
+#define DEFINE_UINT32_GETTER_FUNC(function_name, variable_name)                                                                                                                                        \
+     [[nodiscard]] inline uint32_t function_name( ) const noexcept                                                                                                                                     \
+     {                                                                                                                                                                                                 \
+          uint32_t i;                                                                                                                                                                                  \
+          if(!ReadProcessMemory(process_handle, variable_name, &i, sizeof(i), NULL))                                                                                                                   \
+          {                                                                                                                                                                                            \
+               SYSLOG_ERROR("Failed to read memory for " #variable_name ". Returning 0.0");                                                                                                            \
+               return 0;                                                                                                                                                                               \
+          }                                                                                                                                                                                            \
+          return i;                                                                                                                                                                                    \
      }
 
 /**
@@ -233,10 +237,9 @@ class KO_CLIENT
  * and the sender uses the getter to determine hit reports (COOLDOWN or READY)
  * based on the current cooldown status.
  */
-#define DEFINE_SKILL_FUNCTIONS(skill)                                                                        \
-     DEFINE_FLOAT_GETTER_FUNC(get_##skill##_cooldown,                                                        \
-                              skill##_cooldown_ptr); /*ie. defines get_spike_cooldown*/                      \
-     DEFINE_SEND_SKILL_UNTIL_IN_COOLDOWN_FUNC(skill) /*ie. defines send_spike_until_in_cooldown*/
+#define DEFINE_SKILL_FUNCTIONS(skill)                                                                                                                                                                  \
+     DEFINE_FLOAT_GETTER_FUNC(get_##skill##_cooldown, skill##_cooldown_ptr); /*ie. defines get_spike_cooldown*/                                                                                        \
+     DEFINE_SEND_SKILL_UNTIL_IN_COOLDOWN_FUNC(skill)                         /*ie. defines send_spike_until_in_cooldown*/
 
                                                                            public:
      /**
@@ -281,6 +284,7 @@ class KO_CLIENT
 #endif
 
 #ifdef KO_CLIENT_IMPLEMENTATION
+
 #pragma once
 
 #define KC_MEMUTILS_IMPLEMENTATION 1
@@ -288,10 +292,21 @@ class KO_CLIENT
 
 KO_CLIENT::KO_CLIENT( )
 {
+
+     SYSLOG_INFO("SETUP STARTED\n");
+     SYSLOG_INFO("PID\n");
      process_id = get_process_id_by_client_name("KnightOnLine.exe");
 
      // TODO: Add Safety Features
      process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id);
+     if(process_handle == NULL)
+     {
+          SYSLOG_ERROR("Failed to open process.\n");
+     }
+     else
+     {
+          SYSLOG_SUCCESS("Successfully opened process with ID " << process_id << std::endl);
+     }
 
      // Map the process memory to search for patterns in it
      double const ko_address_space_heap_starts_at = 0.2;     // GB (via manual inspection using vmmap)
@@ -302,6 +317,7 @@ KO_CLIENT::KO_CLIENT( )
      PROCESS_MEMORY   ko_memory {process_handle, heap_base_address, bytes_to_map};
      KO_MEMORY_CONFIG ko_memory_config;
 
+     SYSLOG_INFO("POINTERS\n");
      // Assign the pointers
      player_race = find_player_race(ko_memory, ko_memory_config);
 
@@ -314,8 +330,8 @@ KO_CLIENT::KO_CLIENT( )
      stab2_cooldown_ptr  = find_skill_cooldown_ptr(ko_memory, ko_memory_config, stab2);
      stab_cooldown_ptr   = find_skill_cooldown_ptr(ko_memory, ko_memory_config, stab);
      stroke_cooldown_ptr = find_skill_cooldown_ptr(ko_memory, ko_memory_config, stroke);
-
      assign_player_health_and_mana_ptr(ko_memory, ko_memory_config);
+     SYSLOG_INFO("SETUP COMPLETED\n");
 }
 
 KO_CLIENT::~KO_CLIENT( ) { CloseHandle(process_handle); }
@@ -324,7 +340,11 @@ DWORD KO_CLIENT::get_process_id_by_client_name(const char* process_name)
 {
      // TODO: Add Safety Features
      HANDLE snapshot_handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-     if(snapshot_handle == INVALID_HANDLE_VALUE) { return 0; }
+     if(snapshot_handle == INVALID_HANDLE_VALUE)
+     {
+          SYSLOG_ERROR("Failed to acquire Process ID. Snapshot Handle is Invalid.");
+          return 0;
+     }
 
      PROCESSENTRY32 process_entry { };
      process_entry.dwSize = sizeof(PROCESSENTRY32);
@@ -338,65 +358,108 @@ DWORD KO_CLIENT::get_process_id_by_client_name(const char* process_name)
                break;
           }
      }
-
      CloseHandle(snapshot_handle);
+     if(result == 0)
+     {
+          SYSLOG_ERROR("Failed to acquire Process ID. No matching process found." << std::endl);
+     }
+     else
+     {
+          SYSLOG_SUCCESS("Successfully acquired Process ID: " << result << std::endl);
+     }
+
      return result;
 }
 
 PLAYER_RACE KO_CLIENT::find_player_race(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf)
 {
-     KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.player_nation_identification_byte_pattern,
-                                                              conf.KO_STRING_LENGTH_IN_BYTES);
+     KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.player_nation_identification_byte_pattern, conf.KO_STRING_LENGTH_IN_BYTES);
+
+     if(result == nullptr)
+     {
+          SYSLOG_WARN("Failed to find the pattern. Player Race search failed.\n");
+          assert(1);     // TODO: do something about this.
+          return PLAYER_RACE::KARUS;
+     }
 
      result += conf.player_nation_identification_offset_from_pattern;
 
      KO_MEM_BYTE nation_byte;
-     ReadProcessMemory(process_handle, result, &nation_byte, sizeof(nation_byte), NULL);
+     if(!ReadProcessMemory(process_handle, result, &nation_byte, sizeof(nation_byte), NULL))
+     {
+          SYSLOG_ERROR("Failed to read memory (find_player_race)\n");
+          assert(1);     // TODO: do something about this.
+          return PLAYER_RACE::KARUS;
+     }
 
      switch(nation_byte)
      {
-          case conf.player_nation_human: return PLAYER_RACE::EL_MORAD;
-          case conf.player_nation_karus: return PLAYER_RACE::KARUS;
+          case conf.player_nation_human: SYSLOG_SUCCESS("Successfully acquired the player race as El Morad\n"); return PLAYER_RACE::EL_MORAD;
+
+          case conf.player_nation_karus: SYSLOG_SUCCESS("Successfully acquired the player race as Karus\n"); return PLAYER_RACE::KARUS;
+
           default:
+               SYSLOG_WARN("Failed to identify player nation\n");
                assert(1);     // TODO: do something about this.
                return PLAYER_RACE::KARUS;
      }
 }
 
-KO_MEM_ADR KO_CLIENT::find_skill_cooldown_ptr_generic(PROCESS_MEMORY&   ko_memory_ref,
-                                                      KO_MEMORY_CONFIG& conf,
-                                                      KO_MEM_BYTE*      skill_byte_pattern,
-                                                      size_t            byte_pattern_size)
+KO_MEM_ADR KO_CLIENT::find_skill_cooldown_ptr_generic(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf, KO_MEM_BYTE* skill_byte_pattern, size_t byte_pattern_size)
 {
-     KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(skill_byte_pattern, byte_pattern_size);
+     std::string name_of_skill = std::string(reinterpret_cast<char*>(skill_byte_pattern), 40);
+     KO_MEM_ADR  result        = ko_memory_ref.find_pattern_in_memory(skill_byte_pattern, byte_pattern_size);
+
+     if(result == nullptr)
+     {
+          SYSLOG_WARN("Failed to find the pattern. Skill cooldown pointer search failed: (1) " << name_of_skill << std::endl);
+          return nullptr;     // or handle failure as appropriate
+     }
 
      KO_MEM_ADR  nation_byte_adr = result + conf.skill_nation_identification_offset_from_pattern;
      KO_MEM_BYTE nation_byte;
-     ReadProcessMemory(process_handle, nation_byte_adr, &nation_byte, sizeof(nation_byte), NULL);
+
+     if(!ReadProcessMemory(process_handle, nation_byte_adr, &nation_byte, sizeof(nation_byte), NULL))
+     {
+          SYSLOG_ERROR("Failed to read memory (find_skill_cooldown_ptr_generic)\n");
+          return nullptr;     // or handle failure as appropriate
+     }
 
      // If not the first match, then it's the second match.
      if(nation_byte != (KO_MEM_BYTE) player_race)
+     {
           result = ko_memory_ref.find_pattern_in_memory(skill_byte_pattern, byte_pattern_size, result + 1);
 
+          if(result == nullptr)
+          {
+               SYSLOG_WARN("Failed to find the pattern. Skill cooldown pointer search failed: (2) " << name_of_skill << std::endl);
+               return nullptr;
+          }
+     }
+
+     SYSLOG_SUCCESS("Successfully acquired cooldown pointer. Skill: " << name_of_skill << std::endl);
      return result + conf.skill_cooldown_offset_from_pattern;
 }
 
 void KO_CLIENT::assign_player_health_and_mana_ptr(PROCESS_MEMORY& ko_memory_ref, KO_MEMORY_CONFIG& conf)
 {
-     KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.mana_hp_anchor_byte_pattern,
-                                                              sizeof(conf.mana_hp_anchor_byte_pattern));
+     KO_MEM_ADR result = ko_memory_ref.find_pattern_in_memory(conf.mana_hp_anchor_byte_pattern, sizeof(conf.mana_hp_anchor_byte_pattern));
+
+     if(result == nullptr)
+     {
+          SYSLOG_WARN("Failed to find anchor pattern. Player health and mana pointer assignment failed.\n");
+          return;     // or handle failure as appropriate
+     }
 
      player_max_hp_ptr = result + conf.max_hp_offset_from_pattern;
      player_cur_hp_ptr = result + conf.current_hp_offset_from_pattern;
 
      player_max_mp_ptr = result + conf.max_mana_offset_from_pattern;
      player_cur_mp_ptr = result + conf.current_mana_offset_from_pattern;
+
+     SYSLOG_SUCCESS("Successfully acquired HP & MP.\n");
 }
 
-inline void KO_CLIENT::print_info( ) const noexcept
-{
-     std::cout << "Knight Online PID: " << process_id << "\nKnight Online Handle:  " << process_handle
-               << std::endl;
-}
+inline void KO_CLIENT::print_info( ) const noexcept { std::cout << "Knight Online PID: " << process_id << "\nKnight Online Handle:  " << process_handle << std::endl; }
 
 #endif

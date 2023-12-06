@@ -1,6 +1,6 @@
 #ifndef SYSCORE_BENCHMARK_H
 #define SYSCORE_BENCHMARK_H
-#include  "windows.h"
+#include "windows.h"
 /**
  * @class TICTOC
  *
@@ -10,68 +10,76 @@
  */
 class TICTOC
 {
-    private:
-        LARGE_INTEGER freq; // Frequency of the QuerryPerformanceCounter. Fixed at computer boot.
-        LARGE_INTEGER tic_count; // The initial count of the QuerryPerformanceCounter.
-        LARGE_INTEGER toc_count; // The final count of the QuerryPerformanceCounter.
-        double time_difference_ms; // Time difference between the initial and final count.
+                                                                           private:
+     LARGE_INTEGER freq;                   // Frequency of the QuerryPerformanceCounter. Fixed at computer boot.
+     LARGE_INTEGER tic_count;              // The initial count of the QuerryPerformanceCounter.
+     LARGE_INTEGER toc_count;              // The final count of the QuerryPerformanceCounter.
+     double        time_difference_ms;     // Time difference between the initial and final count.
 
-    public:
-        /**
+                                                                           public:
+     /**
          * @brief Construct a new TICTOC timer. Timer doesn't start till the tic method is run.
          */
-        TICTOC();
+     TICTOC( );
 
-        /**
+     /**
          * @brief Start the timer.
          */
-        void tic();
+     void tic( );
 
-        /**
+     /**
          * @brief End the timer.
          */
-        void toc();
+     void toc( );
 
-        /**
+     /**
          * @brief Returns the elapsed time in ms.
          */
-        double elapsed_time_in_ms();
+     double elapsed_time_in_ms( );
 
-
-        /**
+     /**
          * @brief Returns the elapsed time in ns.
          */
-        double elapsed_time_in_ns();
+     double elapsed_time_in_ns( );
 };
 
 #endif
 
 #ifdef SYSCORE_BENCHMARK_IMPLEMENTATION
-    TICTOC::TICTOC()
-    {
-        QueryPerformanceFrequency(&freq);
-    }
+TICTOC::TICTOC( )
+{
+     if(!QueryPerformanceFrequency(&freq))
+     {
+          // Log an error if QueryPerformanceFrequency fails
+          SYSLOG_ERROR("QueryPerformanceFrequency failed.\n");
+          // Handle the error as appropriate
+     }
+}
 
-    void inline TICTOC::tic()
-    {
-        QueryPerformanceCounter(&tic_count);
-    }
+void inline TICTOC::tic( )
+{
+     if(!QueryPerformanceCounter(&tic_count))
+     {
+          // Log an error if QueryPerformanceCounter fails
+          SYSLOG_ERROR("QueryPerformanceCounter (tic) failed.\n");
+          // Handle the error as appropriate
+     }
+}
 
-    void inline TICTOC::toc()
-    {
-        QueryPerformanceCounter(&toc_count);
+void inline TICTOC::toc( )
+{
+     if(!QueryPerformanceCounter(&toc_count))
+     {
+          // Log an error if QueryPerformanceCounter fails
+          SYSLOG_ERROR("QueryPerformanceCounter (toc) failed.\n");
+          // Handle the error as appropriate
+     }
 
-        time_difference_ms = ((double)(toc_count.QuadPart - tic_count.QuadPart) / freq.QuadPart * 1000);
-    }
+     time_difference_ms = ((double) (toc_count.QuadPart - tic_count.QuadPart) / freq.QuadPart * 1000);
+}
 
-    double inline TICTOC::elapsed_time_in_ms()
-    {
-        return time_difference_ms;
-    }
-    double inline TICTOC::elapsed_time_in_ns()
-    {
-        return time_difference_ms * 1000000;
-    }
+double inline TICTOC::elapsed_time_in_ms( ) { return time_difference_ms; }
+
+double inline TICTOC::elapsed_time_in_ns( ) { return time_difference_ms * 1000000; }
 
 #endif
-
